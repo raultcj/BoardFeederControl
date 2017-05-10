@@ -3,6 +3,8 @@
 #include "opencv2\imgproc\imgproc.hpp"
 #include "opencv2\videoio\videoio.hpp"
 
+#include "serialConnection.h"
+
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,13 +12,14 @@
 using namespace cv;
 using namespace std;
 
-int minSize = 39; //Variables to be changed by the recipe, depending on the board.
-int maxSize = 45;
-
-Mat src, vis;
-
 String src_window = "Source";
 String vis_window = "Visualization";
+
+int minSize; //Variables to be changed by the recipe, depending on the board.
+int maxSize;
+
+Mat src, vis;
+vector<Point> pointList;
 
 void cameraCapture(int, void*) {
 	VideoCapture cap(0); //Capturing default camera
@@ -27,13 +30,6 @@ void cameraCapture(int, void*) {
 	}
 
 	cap >> src;
-
-	try {
-		imshow(src_window, src);
-	}
-	catch (Exception e) {
-		cout << "Window not yet created." << endl;
-	}
 }
 
 vector<Vec3f> getCircles(Mat source) {
@@ -47,60 +43,91 @@ vector<Vec3f> getCircles(Mat source) {
 	return circles;
 }
 
+double getAngle(vector<Point> points) {
+	double angle;
+	int deltaX, deltaY;
+
+	if (points.size() <= 1) {
+		cout << "More points required to calculate angle." << endl;
+		return 0;
+	}
+
+	deltaX = points[1].x - points[0].x;
+	deltaY = points[1].y - points[0].x;
+
+	if (deltaX != 0) {
+		angle = atan(deltaY / deltaX);
+	}
+	else {
+		cout << "Board aligned." << endl;
+	}
+
+	return angle;
+}
+
 int main(int argc, char **argv) {
-	cout << "Select capture method:" << endl
-		<< "1) Image file" << endl
-		<< "2) Camera capture" << endl
-		<< "3) Exit" << endl;
+	//At least two arguments must be passed, the min size of the holes and the max size.
+	if (argc != 3) {
+		cerr << "Insufficient arguments passed." << endl;
+		return (0);
+	}
+	else {
+		minSize = atoi(argv[1]);
+		maxSize = atoi(argv[2]);
 
-	int ans;
-	cin >> ans;
-	string filename;
+		//The min size must be smaller than the max size.
+		if (minSize > maxSize) {
+			cerr << "Invalid arguments passed (min > max)." << endl;
+			return(0);
+		}
+	}
 
-	switch (ans) {
-	case 1:
-		cout << "Insert filename" << endl;
-		cin >> filename;
-		src = imread(filename, 1);
-		src.copyTo(vis);
-		break;
-	case 2:
+	while (true) {
+		//Initiating camera capture.
 		cameraCapture(-1, 0);
-		break;
-	default:
-		return (0);
-		break;
+		src.copyTo(vis);
+
+		//Declare both the source window and the program's visualization of the circles.
+		namedWindow(src_window, CV_WINDOW_AUTOSIZE);
+		namedWindow(vis_window, CV_WINDOW_AUTOSIZE);
+
+		cout << "Press ESC key to terminate" << endl;
+
+		//Find the circles that will determine the angle.
+		vector<Vec3f> circles = getCircles(src);
+
+		cout << "Detected " << circles.size() << " circles that comply with the parameters." << endl;
+
+		//Resetting points vector.
+		pointList.clear();
+
+		for (size_t i = 0; i < circles.size(); i++) {
+			Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+			int radius = cvRound(circles[i][2]);
+
+			//Add point to pointList vector.
+			pointList.push_back(center);
+			//Draw circle on Vis window.
+			circle(vis, center, 15, Scalar(0, 0, 255), -1, 8, 0);
+
+			cout << "Circle " << i << endl
+				<< "x: " << center.x << endl
+				<< "y: " << center.y << endl;
+		}
+
+		//Get angle of error based on the points.
+		cout << getAngle(pointList) << endl;
+
+		//Send angle of error to the Serial Port.
+		//connect(getAngle(pointList));
+
+		//Display source and vis window.
+		imshow(src_window, src);
+		imshow(vis_window, vis);
+
+		if (waitKey(0) == 27) {
+			break;
+		}
 	}
-
-	if (src.empty()) {
-		cerr << "Blank frame grabbed\n";
-		return (0);
-	}
-
-	namedWindow(src_window, CV_WINDOW_NORMAL);
-	namedWindow(vis_window, CV_WINDOW_NORMAL);
-
-	cout << "Press ESC key to terminate" << endl;
-
-	vector<Vec3f> circles = getCircles(src);
-
-	cout << "Detected " << circles.size()
-		<< " circles that comply with the parameters." << endl;
-
-	for (size_t i = 0; i < circles.size(); i++) {
-		Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
-		int radius = cvRound(circles[i][2]);
-
-		circle(vis, center, 15, Scalar(0, 0, 255), -1, 8, 0);
-
-		cout << "Circle " << i << endl
-			<< "x: " << center.x << endl
-			<< "y: " << center.y << endl;
-	}
-
-	imshow(src_window, src);
-	imshow(vis_window, vis);
-
-	waitKey(0);
 	return (0);
 }
