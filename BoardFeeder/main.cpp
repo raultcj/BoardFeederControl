@@ -12,17 +12,16 @@
 using namespace cv;
 using namespace std;
 
+String pathTempl;
 String src_window = "Source";
 String vis_window = "Visualization";
 
-int minSize; //Variables to be changed by the recipe, depending on the board.
-int maxSize;
-
 Mat src, vis;
-vector<Point> pointList;
 
 void cameraCapture(int, void*) {
 	VideoCapture cap(0); //Capturing default camera
+	cap.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
+	cap.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
 
 	if (!cap.isOpened()) {
 		cerr << "Unable to open camera." << endl;
@@ -32,98 +31,77 @@ void cameraCapture(int, void*) {
 	cap >> src;
 }
 
-vector<Vec3f> getCircles(Mat source) {
-	vector<Vec3f> circles;
-	Mat gray;
+bool compareCapture(Mat source, Mat templ) {
+	bool pass = false;
+	int cols = source.cols - templ.cols + 1;
+	int rows = source.rows - templ.rows + 1;
 
-	cvtColor(src, gray, COLOR_BGR2GRAY);
-	GaussianBlur(gray, gray, Size(9, 9), 2, 2);
-	HoughCircles(gray, circles, HOUGH_GRADIENT, 1, gray.rows / 16, 100, 30, minSize, maxSize);
+	Mat result(cols, rows, CV_32FC1);
+	matchTemplate(source, templ, result, CV_TM_CCOEFF);
+	normalize(result, result, 0, 255.0, NORM_MINMAX, CV_8UC1, Mat());
 
-	return circles;
-}
+	Mat resultMask;
+	threshold(result, resultMask, 180, 255.0, THRESH_BINARY);
 
-double getAngle(vector<Point> points) {
-	double angle;
-	int deltaX, deltaY;
+	vector <vector<Point> > draw;
+	findContours(resultMask, draw, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(templ.cols / 2, templ.rows / 2));
 
-	if (points.size() <= 1) {
-		cout << "More points required to calculate angle." << endl;
-		return 0;
+	vector <vector<Point> >::iterator i;
+
+	for (i = draw.begin(); i != draw.end(); i++) {
+		Moments m = moments(*i, false);
+		Point centroid(m.m10 / m.m00, m.m01 / m.m00);
+		circle(src, centroid, 40, Scalar(0, 0, 255), -1, 8, 0);
 	}
 
-	deltaX = points[1].x - points[0].x;
-	deltaY = points[1].y - points[0].x;
-
-	if (deltaX != 0) {
-		angle = atan(deltaY / deltaX);
-	}
-	else {
-		cout << "Board aligned." << endl;
+	if (!result.empty()) {
+		pass = true;
 	}
 
-	return angle;
+	return pass;
 }
 
 int main(int argc, char **argv) {
 	//At least two arguments must be passed, the min size of the holes and the max size.
-	if (argc != 3) {
-		cerr << "Insufficient arguments passed." << endl;
-		return (0);
+	if (argc != 2) {
+		cerr << "Insufficient arguments passed. Must include ID of the board." << endl;
+		//pathTempl = "C:\\Users\\Raul Juarez\\Pictures\\Camera Roll\\rpi.jpg";
+		return -1;
 	}
 	else {
-		minSize = atoi(argv[1]);
-		maxSize = atoi(argv[2]);
-
-		//The min size must be smaller than the max size.
-		if (minSize > maxSize) {
-			cerr << "Invalid arguments passed (min > max)." << endl;
-			return(0);
+		//Verify integrity of the argument pased.
+		try {
+			pathTempl = argv[1];
+		}
+		catch (Exception e) {
+			cout << "Error parsing ID string." << endl;
+			return -1;
 		}
 	}
 
 	while (true) {
 		//Initiating camera capture.
 		cameraCapture(-1, 0);
-		src.copyTo(vis);
+		Mat templ = imread(pathTempl, 1);
 
-		//Declare both the source window and the program's visualization of the circles.
-		namedWindow(src_window, CV_WINDOW_AUTOSIZE);
-		namedWindow(vis_window, CV_WINDOW_AUTOSIZE);
-
-		cout << "Press ESC key to terminate" << endl;
-
-		//Find the circles that will determine the angle.
-		vector<Vec3f> circles = getCircles(src);
-
-		cout << "Detected " << circles.size() << " circles that comply with the parameters." << endl;
-
-		//Resetting points vector.
-		pointList.clear();
-
-		for (size_t i = 0; i < circles.size(); i++) {
-			Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
-			int radius = cvRound(circles[i][2]);
-
-			//Add point to pointList vector.
-			pointList.push_back(center);
-			//Draw circle on Vis window.
-			circle(vis, center, 15, Scalar(0, 0, 255), -1, 8, 0);
-
-			cout << "Circle " << i << endl
-				<< "x: " << center.x << endl
-				<< "y: " << center.y << endl;
+		if (templ.empty()) {
+			cout << "No template found." << endl;
+			return -1;
 		}
 
-		//Get angle of error based on the points.
-		cout << getAngle(pointList) << endl;
+		//Declare both the source window and the program's visualization of the circles.
+		namedWindow(src_window, CV_WINDOW_NORMAL);
 
-		//Send angle of error to the Serial Port.
-		//connect(getAngle(pointList));
+		if (compareCapture(src, templ)) {
+			cout << "Board Passed." << endl;
+		}
+		else {
+			cout << "Board NOT Passed." << endl;
+			return -1;
+		}
 
 		//Display source and vis window.
 		imshow(src_window, src);
-		imshow(vis_window, vis);
 
 		if (waitKey(0) == 27) {
 			break;
