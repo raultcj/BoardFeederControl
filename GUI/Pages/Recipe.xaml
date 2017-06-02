@@ -1,0 +1,34 @@
+﻿<UserControl x:Class="GUI.Pages.Recipe"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mui="http://firstfloorsoftware.com/ModernUI"
+             mc:Ignorable="d">
+    <Grid Style="{StaticResource ContentRoot}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition>
+            </ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <StackPanel Grid.Column="0">
+            <ComboBox x:Name="recipeList" SelectionChanged="recipeList_SelectionChanged"></ComboBox>
+            <Separator Height="20"></Separator>
+            <TextBlock Text="Recipe ID" Style="{StaticResource Heading2}" />
+            <TextBlock x:Name="recipeID" Padding="10" />
+
+            <TextBlock Text="Width" Style="{StaticResource Heading2}" />
+            <TextBlock x:Name="recipeWidth" Padding="10" />
+
+            <TextBlock Text="Lot Number" Style="{StaticResource Heading2}" />
+            <TextBlock x:Name="recipeLot" Padding="10" />
+
+            <TextBlock Text="Date of Creation" Style="{StaticResource Heading2}" />
+            <TextBlock x:Name="recipeBirth" Padding="10" />
+            <Separator Height="20"></Separator>
+            <Button Click="Button_Click">Create New Recipe</Button>
+        </StackPanel>
+        <Image x:Name="recipeImage" Grid.Column="1">
+        </Image>
+    </Grid>
+</UserControl>
