@@ -48,5 +48,8 @@ namespace GUI {
 
             dbConnection.Close();
         }
+
+        private void createRecipe() {
+        }
     }
 }

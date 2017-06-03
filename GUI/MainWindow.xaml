@@ -11,7 +11,8 @@
         <mui:LinkGroup DisplayName="Board Feeder Control" x:Name="welcomeText">
             <mui:LinkGroup.Links>
                 <mui:Link DisplayName="Home" Source="/Pages/Home.xaml" />
-                <mui:Link DisplayName="Recipe" Source="/Pages/Recipe.xaml" />
+                <mui:Link DisplayName="Create Recipe" Source="/Pages/createRecipe.xaml" />
+                <mui:Link DisplayName="Load Recipe" Source="/Pages/Recipe.xaml" />
                 <mui:Link DisplayName="User Info" Source="/Pages/UserInfo.xaml" />
             </mui:LinkGroup.Links>
         </mui:LinkGroup>

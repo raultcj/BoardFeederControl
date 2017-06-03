@@ -3,8 +3,6 @@
 #include "opencv2\imgproc\imgproc.hpp"
 #include "opencv2\videoio\videoio.hpp"
 
-#include "serialConnection.h"
-
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -94,6 +92,7 @@ int main(int argc, char **argv) {
 
 		if (compareCapture(src, templ)) {
 			cout << "Board Passed." << endl;
+			return 0;
 		}
 		else {
 			cout << "Board NOT Passed." << endl;
