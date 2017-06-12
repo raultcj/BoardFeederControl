@@ -13,11 +13,11 @@
                 <TextBox x:Name="recipeID"></TextBox>
                 <TextBlock Text="Board Width" Style="{StaticResource Heading2}" />
                 <TextBox x:Name="recipeWidth"></TextBox>
-                <TextBlock Text="Lot Number" Style="{StaticResource Heading2}" />
-                <TextBox x:Name="recipeLot"></TextBox>
                 <TextBlock Text="Board Template" Style="{StaticResource Heading2}" />
                 <TextBox x:Name="recipeTemp"></TextBox>
-                <Button x:Name="browseFile">Browse...</Button>
+                <Button x:Name="browseFile" Click="browseFile_Click">Browse...</Button>
+                <Separator Height="20"></Separator>
+                <Button x:Name="submitButton" Click="submitButton_Click">Submit</Button>
             </StackPanel>
         </ScrollViewer>
     </Grid>

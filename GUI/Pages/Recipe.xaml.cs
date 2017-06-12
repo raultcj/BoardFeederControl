@@ -2,10 +2,8 @@
 using System.Collections.ObjectModel;
 using System.Data.SQLite;
 using System.IO;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
-using FirstFloor.ModernUI.Windows.Navigation;
 
 namespace GUI.Pages {
 
@@ -17,8 +15,6 @@ namespace GUI.Pages {
 
         private string dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "SMTBoardFeeder");
         private SQLiteConnection dbConnection;
-
-        private bool recipeLoaded = false;
 
         public Recipe() {
             InitializeComponent();
@@ -46,9 +42,6 @@ namespace GUI.Pages {
             recipeList.ItemsSource = list;
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e) {
-        }
-
         private void recipeList_SelectionChanged(object sender, SelectionChangedEventArgs e) {
             //This method loads the recipe's attributes from the SQL database.
             string sql = "SELECT * FROM RECIPES";
@@ -62,19 +55,18 @@ namespace GUI.Pages {
                 if (reader["ID"].ToString() == recipeList.SelectedItem.ToString()) {
                     recipeID.Text = reader["ID"].ToString();
                     recipeWidth.Text = reader["WIDTH"].ToString();
-                    recipeLot.Text = reader["LOT"].ToString();
                     recipeBirth.Text = reader["DATE"].ToString();
 
                     byte[] imgBytes = (Byte[])reader["IMG"];
                     recipeImage.Source = ByteToImage(imgBytes);
-
-                    recipeLoaded = true;
 
                     break;
                 }
             }
 
             dbConnection.Close();
+            loadRecipes();
+            mWindow.recipeSelected = true;
         }
 
         private BitmapImage ByteToImage(byte[] imageBytes) {
@@ -87,14 +79,17 @@ namespace GUI.Pages {
             img.StreamSource = ms;
             img.EndInit();
 
+            SaveImage(img);
+
             return img;
         }
 
-        private byte[] ImageToByte(System.Drawing.Image img, System.Drawing.Imaging.ImageFormat format) {
-            using (MemoryStream ms = new MemoryStream()) {
-                img.Save(ms, format);
-                byte[] imageBytes = ms.ToArray();
-                return imageBytes;
+        private void SaveImage(BitmapImage img) {
+            BitmapEncoder encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(img));
+
+            using (var fs = new FileStream(Path.Combine(dbPath, "tempImg.png"), FileMode.Create)) {
+                encoder.Save(fs);
             }
         }
     }

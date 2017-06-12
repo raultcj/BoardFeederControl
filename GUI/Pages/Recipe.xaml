@@ -20,14 +20,9 @@
             <TextBlock Text="Width" Style="{StaticResource Heading2}" />
             <TextBlock x:Name="recipeWidth" Padding="10" />
 
-            <TextBlock Text="Lot Number" Style="{StaticResource Heading2}" />
-            <TextBlock x:Name="recipeLot" Padding="10" />
-
             <TextBlock Text="Date of Creation" Style="{StaticResource Heading2}" />
             <TextBlock x:Name="recipeBirth" Padding="10" />
             <Separator Height="20"></Separator>
-            <Button Content="Create New Recipe" Click="Button_Click">
-            </Button>
         </StackPanel>
         <Image x:Name="recipeImage" Grid.Column="1">
         </Image>

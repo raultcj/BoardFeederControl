@@ -2,6 +2,8 @@
 using System;
 using System.Data.SQLite;
 using System.IO;
+using System.Threading.Tasks;
+using System.Windows.Controls;
 
 namespace GUI {
 
@@ -17,14 +19,23 @@ namespace GUI {
         public string _name;
         public string _position;
         public string _supervisor;
+        public bool _admin;
+
+        public bool recipeSelected = false;
 
         public MainWindow(int ID) {
             InitializeComponent();
 
             Pages.UserInfo.mWindow = this;
+            Pages.Home.mWindow = this;
+            Pages.Recipe.mWindow = this;
 
             this._id = ID;
             getUserInfo();
+
+            if (!_admin) {
+                welcomeText.Links.RemoveAt(1);
+            }
 
             welcomeText.DisplayName = "Welcome, " + _name;
         }
@@ -43,13 +54,22 @@ namespace GUI {
                     _name = reader["NAME"].ToString();
                     _position = reader["POSITION"].ToString();
                     _supervisor = reader["SUPERVISOR"].ToString();
+
+                    if (reader["ADMIN"].ToString().Equals("1")) {
+                        _admin = true;
+                    }
+                    else {
+                        _admin = false;
+                    }
                 }
             }
 
             dbConnection.Close();
         }
 
-        private void createRecipe() {
+        public void displayErrorMessage(string msg) {
+            this.Show();
+            ModernDialog.ShowMessage(msg, "Error", System.Windows.MessageBoxButton.OK);
         }
     }
 }

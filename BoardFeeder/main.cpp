@@ -17,7 +17,7 @@ String vis_window = "Visualization";
 Mat src, vis;
 
 void cameraCapture(int, void*) {
-	VideoCapture cap(0); //Capturing default camera
+	VideoCapture cap(1); //Capturing default camera
 	cap.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
 	cap.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
 
@@ -26,7 +26,7 @@ void cameraCapture(int, void*) {
 		return;
 	}
 
-	cap >> src;
+	cap.read(src);
 }
 
 bool compareCapture(Mat source, Mat templ) {
@@ -34,26 +34,39 @@ bool compareCapture(Mat source, Mat templ) {
 	int cols = source.cols - templ.cols + 1;
 	int rows = source.rows - templ.rows + 1;
 
-	Mat result(cols, rows, CV_32FC1);
-	matchTemplate(source, templ, result, CV_TM_CCOEFF);
-	normalize(result, result, 0, 255.0, NORM_MINMAX, CV_8UC1, Mat());
+	Mat result(cols, rows, CV_32F);
 
-	Mat resultMask;
-	threshold(result, resultMask, 180, 255.0, THRESH_BINARY);
+	//blur(templ, templ, Size(15, 15), Point(-1, -1));
 
-	vector <vector<Point> > draw;
-	findContours(resultMask, draw, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(templ.cols / 2, templ.rows / 2));
+	//imshow("sayy", templ);
+	//waitKey(0);
 
-	vector <vector<Point> >::iterator i;
+	matchTemplate(source, templ, result, CV_TM_CCOEFF_NORMED);
+	//normalize(result, resultMinMax, 0, 1, NORM_MINMAX, -1, Mat());
 
-	for (i = draw.begin(); i != draw.end(); i++) {
-		Moments m = moments(*i, false);
-		Point centroid(m.m10 / m.m00, m.m01 / m.m00);
-		circle(src, centroid, 40, Scalar(0, 0, 255), -1, 8, 0);
-	}
+	double minVal, maxVal;
+	Point minLoc, maxLoc, matchLoc;
 
-	if (!result.empty()) {
+	minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc);
+
+	matchLoc = maxLoc;
+
+	//rectangle(src, matchLoc, Point(matchLoc.x + templ.cols, matchLoc.y + templ.rows), Scalar(255, 0, 0), 2, 8, 0);
+	//rectangle(src, minLoc, Point(minLoc.x + templ.cols, minLoc.y + templ.rows), Scalar(0, 255, 0), 2, 8, 0);
+	//rectangle(result, matchLoc, Point(matchLoc.x + templ.cols, matchLoc.y + templ.rows), Scalar(255, 0, 0), 2, 8, 0);
+
+	/*cout << maxVal << endl;
+	cout << minVal << endl;
+	cout << "***" << endl;
+
+	cout << maxLoc.x << endl;
+	cout << maxLoc.y << endl;*/
+
+	if (maxVal > 0.45) {
 		pass = true;
+	}
+	else {
+		pass = false;
 	}
 
 	return pass;
@@ -77,34 +90,33 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	while (true) {
-		//Initiating camera capture.
-		cameraCapture(-1, 0);
-		Mat templ = imread(pathTempl, 1);
+	//Initiating camera capture.
+	cameraCapture(0, 0);
+	Mat templ = imread(pathTempl);
+	cvtColor(templ, templ, CV_BGR2GRAY);
+	cvtColor(src, src, CV_BGR2GRAY);
 
-		if (templ.empty()) {
-			cout << "No template found." << endl;
-			return -1;
-		}
-
-		//Declare both the source window and the program's visualization of the circles.
-		namedWindow(src_window, CV_WINDOW_NORMAL);
-
-		if (compareCapture(src, templ)) {
-			cout << "Board Passed." << endl;
-			return 0;
-		}
-		else {
-			cout << "Board NOT Passed." << endl;
-			return -1;
-		}
-
-		//Display source and vis window.
-		imshow(src_window, src);
-
-		if (waitKey(0) == 27) {
-			break;
-		}
+	if (templ.empty()) {
+		cout << "No template found." << endl;
+		return -1;
 	}
+
+	//Declare both the source window and the program's visualization of the circles.
+	//namedWindow(src_window, CV_WINDOW_NORMAL);
+	//namedWindow(vis_window, CV_WINDOW_NORMAL);
+
+	if (compareCapture(src, templ)) {
+		cout << "Board Passed." << endl;
+		//return 0;
+	}
+	else {
+		cout << "Board NOT Passed." << endl;
+		//return -1;
+	}
+
+	//Display source and vis window.
+	//imshow(src_window, src);
+	//imshow(vis_window, templ);
+
 	return (0);
 }
